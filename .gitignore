@@ -2,3 +2,5 @@ enviro/
 env/
 venv/
 Usage.md 
+app.py
+base.db
