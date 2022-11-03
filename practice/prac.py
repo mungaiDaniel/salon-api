@@ -1,63 +1,65 @@
-from flask import Flask,request,jsonify
-from flask_restful import Api, Resource
+from crypt import methods
+from flask import Flask, request
+from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
+
 
 
 app = Flask(__name__)
 api = Api(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-SQLALCHEMY_TRACK_MODIFICATIONS = False
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tast.db'
 db = SQLAlchemy(app)
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 class Salon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    employer = db.Column(db.String(100), nullable=False )
-    styles = db.Column(db.String(40), nullable=False)
+    employer = db.Column(db.String, nullable=False)
+    styles = db.Column(db.String, nullable=False)
 
     def __repr__(self):
-        return f"{self.employer} - {self.styles}"
+        return f"{self.id} - {self.employer} - {self.styles}"
 
 @app.route('/')
 @app.route('/salon')
-def salon():
-
+def get():
     sal = Salon.query.all()
-
     output = []
     for i in sal:
-        sal_dat = {'employer': i.employer, 'styles': i.styles}
+        data = {'id': i.id, 'employer': i.employer, 'styles': i.styles}
 
-        output.append(sal_dat)
+        output.append(data)
 
     return {"salon": output}
-@app.route('/salon/<id>')
-def get(id):
+
+@app.route('/salon/<int:id>')
+def get_one(id):
     sal = Salon.query.get_or_404(id)
 
-    return {"employer": sal.employer, "styles": sal.styles}
-
+    return {"id":sal.id, "employer": sal.employer, "styles": sal.styles}
 @app.route('/salon', methods=['POST'])
-def add_salon():
+def add():
     data = request.get_json()
+    i = data['id']
     e = data['employer']
-    s= data['styles']
+    s = data['styles']
 
-    #validation
-    if len(e) < 3:
-        return {
-            "message":"salon employer length must be more than 3"
-        }
-    sal = Salon(employer=e, styles=s)
+    sal = Salon(id=i, employer=e, styles=s)
+
     db.session.add(sal)
     db.session.commit()
 
-    return {
-        "id":"hhhhhhh"
-    }
- 
+    return {"employer": sal.employer}
 
+@app.route('/salon/<int:id>', methods=['DELETE'])
+def delete(id):
+    sal = Salon.query.get(id)
+    if sal is None:
+        return {"error": "not found"}
 
+    db.session.delete(sal)
+    db.session.commit()
 
+    return {"message deleted succesfuly": sal.id}
 
 if __name__ == '__main__':
     app.run(debug=True)
